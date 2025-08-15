@@ -1,254 +1,316 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>FBRC (PRIVATE BETA)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <title>FlappyBird RECREATED</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Firebase SDKs -->
+  <!-- Firebase compat SDKs (keeps code straightforward) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <style>
-    /* Reset & Base */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; background: #000; color: #fff; font-family: Arial, sans-serif; overflow: hidden; }
+    :root {
+      --brand: #d50000;
+      --brand-hover: #ff4d4d;
+      --panel: #111;
+      --muted: #bbb;
+      --border: #333;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; height: 100%;
+      background: #000; color: #fff;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
 
-    /* Top Bar */
+    /* Top bar */
     .top-bar {
       position: absolute; top: 12px; left: 16px; right: 16px;
-      display: flex; justify-content: space-between; align-items: center; z-index: 50;
+      display: flex; justify-content: space-between; align-items: center;
+      z-index: 20;
     }
-    #btnDiagnostics {
+    .diag-btn {
       display: none;
-      background: #d50000; color: #fff; border: none; border-radius: 999px;
+      background: var(--brand); color: #fff;
+      border: none; border-radius: 999px;
       padding: 6px 18px; font-weight: bold; cursor: pointer;
     }
+    .diag-btn:hover { background: var(--brand-hover); }
     .avatar {
-      width: 36px; height: 36px; border: 2px solid #d50000; border-radius: 50%;
-      cursor: pointer;
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 2px solid var(--brand); cursor: pointer;
+      background: #000;
     }
 
-    /* Profile Panel */
+    /* Profile panel (top-right) */
     .profile-panel {
       position: fixed; top: 56px; right: 16px; z-index: 60;
-      width: 92vw; max-width: 360px; background: #111; border: 2px solid #d50000;
-      border-radius: 12px; padding: 16px; display: none; text-align: center;
+      width: 92vw; max-width: 360px; background: var(--panel);
+      border: 2px solid var(--brand); border-radius: 12px;
+      padding: 16px; display: none;
     }
-    #userPhoto {
-      display: none; width: 48px; height: 48px; border-radius: 50%; margin: 0 auto 12px;
+    .profile-panel h2 { margin: 0 0 12px; text-align: center; font-size: 1.1rem; }
+    .profile-row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+    .profile-ava {
+      width: 48px; height: 48px; border-radius: 50%;
+      border: 1px solid var(--border); background: #222;
+      background-size: cover; background-position: center;
     }
-    #profileName {
-      margin-bottom: 12px; font-size: 1.1rem;
-    }
-    .profile-panel input {
-      width: 100%; padding: 8px; margin: 6px 0;
+    .muted { color: var(--muted); font-size: 0.9rem; }
+    .auth-input {
+      width: 100%; padding: 10px; margin: 6px 0;
       background: #222; border: 1px solid #444; border-radius: 8px; color: #fff;
     }
-    .profile-panel button {
-      width: 100%; margin: 6px 0; padding: 10px;
-      background: #d50000; border: none; border-radius: 999px;
-      color: #fff; font-weight: bold; cursor: pointer;
+    .auth-row { display: flex; gap: 8px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 100%; padding: 10px;
+      background: var(--brand); color: #fff;
+      border: none; border-radius: 999px; font-weight: bold; cursor: pointer;
     }
-    .auth‐divider {
-      margin: 12px 0; text-align: center; font-size: .9rem; color: #888;
+    .btn:hover { background: var(--brand-hover); }
+    .btn-ghost {
+      background: transparent; border: 1px solid var(--border);
     }
-    .auth‐divider::before,
-    .auth‐divider::after {
-      content: ""; display: inline-block; vertical-align: middle;
-      width: 30%; height: 1px; background: #444; margin: 0 6px;
+    .divider {
+      display: flex; align-items: center; gap: 8px; color: var(--muted);
+      font-size: .85rem; margin: 12px 0;
     }
+    .divider::before, .divider::after {
+      content: ""; flex: 1; height: 1px; background: #444;
+    }
+    /* Google (compliant look) */
+    .google-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 10px; width: 100%;
+      background: #fff; color: #3c4043;
+      border: 1px solid #dadce0; border-radius: 4px;
+      padding: 10px; font-weight: 600; cursor: pointer;
+    }
+    .google-btn:hover { background: #f7f8f8; }
+    .google-btn img { width: 18px; height: 18px; }
 
-    /* Warning Banner */
+    /* Signed-in options list */
+    .options { display: grid; gap: 8px; margin-top: 8px; }
+    .opt { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: #0c0c0c; cursor: pointer; text-align: left; }
+    .opt:hover { border-color: #555; }
+
+    /* Warning + menu stack */
+    .stack {
+      position: relative; height: 100%;
+      display: flex; flex-direction: column; align-items: center;
+      overflow: hidden;
+    }
     .warning-banner {
-      margin: 96px auto 0;
-      max-width: 90%; background: rgba(50,50,50,0.6);
-      padding: 10px 16px; border-radius: 8px;
+      margin-top: 96px;
       display: flex; align-items: center;
+      background: rgba(50,50,50,0.6);
+      padding: 10px 16px; border-radius: 8px;
+      max-width: 90%;
     }
-    .warning-banner img {
-      width: 24px; height: 24px; margin-right: 10px; opacity: .8;
-    }
-    .warning-text { font-size: .9rem; line-height: 1.3rem; }
-
-    /* Main Menu */
+    .warning-banner img { width: 24px; height: 24px; margin-right: 10px; opacity: 0.8; }
+    .warning-text { font-size: 0.9rem; line-height: 1.3rem; }
     .menu-box {
-      margin: 24px auto 0;
+      border: 3px solid var(--brand);
+      border-radius: 16px;
+      padding: 20px; text-align: center;
       width: 90%; max-width: 360px;
-      border: 3px solid #d50000; border-radius: 16px;
-      padding: 20px; display: flex; flex-direction: column; gap: 10px;
+      margin-top: 24px; /* ensures no overlap with warning */
+      display: flex; flex-direction: column; align-items: center;
     }
-    .logo { width: 152px; margin: 0 auto 24px; }
+    .logo { width: 152px; margin-bottom: 24px; }
     .menu-button {
-      width: 100%; padding: 14px 0;
-      background: #d50000; color: #fff; font-weight: bold;
-      border: none; border-radius: 999px; font-size: 16px;
-      cursor: pointer; transition: background .2s;
+      background: var(--brand); color: #fff;
+      font-weight: bold; border: none; border-radius: 999px;
+      padding: 14px 0; margin: 10px 0; width: 100%;
+      font-size: 16px; cursor: pointer; transition: background .2s;
     }
-    .menu-button:hover { background: #ff4d4d; }
+    .menu-button:hover { background: var(--brand-hover); }
 
-    /* Leaderboard Modal */
+    /* Leaderboard modal */
     .leaderboard-modal {
-      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      background: #111; border: 2px solid #d50000; border-radius: 12px;
-      padding: 20px; width: 300px; max-height: 80vh; overflow-y: auto;
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: #111; border: 2px solid var(--brand);
+      border-radius: 12px; padding: 20px;
+      width: 320px; max-height: 80vh; overflow-y: auto;
       z-index: 40; display: none;
     }
-    .leaderboard-modal h2 {
-      text-align: center; color: gold; margin-bottom: 12px;
-    }
-    .entry {
-      display: flex; justify-content: space-between;
-      padding: 6px 0; border-bottom: 1px solid #333;
-    }
+    .leaderboard-modal h2 { margin: 0 0 12px; font-size: 1.2rem; color: #FFD700; text-align: center; }
+    .entry { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #333; }
     .close-button {
       display: block; margin: 12px auto 0;
-      background: #d50000; color: #fff; border: none;
-      border-radius: 999px; padding: 6px 12px; font-size: .8rem;
-      cursor: pointer;
+      background: var(--brand); color: #fff;
+      border: none; border-radius: 999px; padding: 6px 12px; font-size: .9rem; cursor: pointer;
     }
 
-    /* Settings Modal */
-    .modal {
-      position: fixed; inset: 0; display: none;
-      align-items: center; justify-content: center; z-index: 30;
+    /* Settings modal (blur background only) */
+    .modal { position: fixed; inset: 0; display: none; z-index: 35; }
+    .modal .backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); }
+    .modal .sheet {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: var(--panel); border: 2px solid var(--brand); border-radius: 12px;
+      width: 92vw; max-width: 400px; max-height: 80vh; overflow-y: auto; padding: 16px; z-index: 1;
     }
-    .modal-bg {
-      position: absolute; inset: 0; background: rgba(0,0,0,0.6);
-      backdrop-filter: blur(6px);
-    }
-    .sheet {
-      position: relative; background: #111; border: 2px solid #d50000;
-      border-radius: 12px; width: 92vw; max-width: 400px; max-height: 80vh;
-      overflow-y: auto; padding: 16px; z-index: 1;
-    }
-    .sheet h2 { text-align: center; margin-bottom: 12px; }
-    .row {
-      display: flex; justify-content: space-between; align-items: center;
-      margin: 8px 0;
-    }
+    .sheet h2 { text-align: center; margin: 0 0 12px; }
+    .row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; }
     .toggle { position: relative; width: 44px; height: 24px; }
     .toggle input { opacity: 0; width: 0; height: 0; }
-    .slider {
-      position: absolute; inset: 0; background: #333; border-radius: 999px;
-      transition: background .2s;
-    }
-    .slider::before {
-      content: ""; position: absolute; width: 18px; height: 18px;
-      top: 3px; left: 3px; background: #fff; border-radius: 999px;
-      transition: transform .2s;
-    }
-    .toggle input:checked + .slider { background: #d50000; }
+    .slider { position: absolute; inset: 0; background: #333; border-radius: 999px; transition: background .2s; }
+    .slider::before { content: ""; position: absolute; width: 18px; height: 18px; top: 3px; left: 3px; background: #fff; border-radius: 999px; transition: transform .2s; }
+    .toggle input:checked + .slider { background: var(--brand); }
     .toggle input:checked + .slider::before { transform: translateX(20px); }
-    select {
-      width: 100%; margin-top: 6px; padding: 8px;
-      background: #222; border: 1px solid #444; border-radius: 8px;
-      color: #fff;
-    }
-    .save-btn {
-      width: 100%; margin-top: 12px; padding: 10px;
-      background: #d50000; border: none; border-radius: 999px;
-      color: #fff; font-weight: bold; cursor: pointer;
+    select { width: 100%; padding: 8px; border: 1px solid #444; border-radius: 8px; background: #222; color: #fff; margin-top: 6px; }
+    .save-btn { width: 100%; padding: 10px; margin-top: 12px; border: none; border-radius: 999px; background: var(--brand); color: #fff; font-weight: bold; cursor: pointer; }
+
+    /* Game stage */
+    #gameStage { position: fixed; inset: 0; display: none; z-index: 5; }
+    #gameCanvas {
+      width: 100%; height: 100%; display: block; touch-action: manipulation;
+      background: #000 url("https://app.masonnet.org/flappy_bg.png") center/cover no-repeat; /* custom background */
     }
 
-    /* Game Canvas */
-    #gameStage {
-      position: fixed; inset: 0; background: #000; display: none; z-index: 5;
+    /* Admin console modal */
+    .admin-modal { position: fixed; inset: 0; display: none; z-index: 50; align-items: center; justify-content: center; }
+    .admin-modal .backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); }
+    .admin-modal .card {
+      position: relative; z-index: 1; width: 92vw; max-width: 420px;
+      background: var(--panel); border: 2px solid var(--brand); border-radius: 12px; padding: 16px;
     }
-    #gameCanvas { width: 100%; height: 100%; display: block; }
+    .admin-modal h3 { margin: 0 0 10px; }
+    .admin-modal .admin-row { display: grid; gap: 10px; }
+    .admin-modal .btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
   </style>
 </head>
 <body>
 
-  <!-- Top Bar -->
+  <!-- Top bar -->
   <div class="top-bar">
-    <button id="btnDiagnostics">Diagnostics</button>
-    <img id="avatarBtn" src="https://app.masonnet.org/default-avatar.png" class="avatar" alt="Avatar">
+    <button id="btnDiagnostics" class="diag-btn">Diagnostics</button>
+    <img id="avatarBtn" src="https://app.masonnet.org/default-avatar.png" alt="Avatar" class="avatar" />
   </div>
 
-  <!-- Profile Panel -->
-  <div id="profilePanel" class="profile-panel">
-    <img id="userPhoto" alt="User Photo">
-    <div id="profileName">Not signed in</div>
+  <!-- Profile panel -->
+  <div id="profilePanel" class="profile-panel" aria-live="polite">
+    <h2>Profile</h2>
+    <div class="profile-row">
+      <div id="profileAva" class="profile-ava"></div>
+      <div>
+        <div id="profileName">Not signed in</div>
+        <div id="profileEmail" class="muted">—</div>
+      </div>
+    </div>
 
-    <!-- Email/Password -->
-    <input id="emailInput" type="email" placeholder="Email">
-    <input id="passInput" type="password" placeholder="Password">
-    <button id="btnEmailSignIn">Sign In (Email)</button>
-    <button id="btnEmailSignUp">Sign Up (Email)</button>
+    <!-- Auth area (visible when signed out) -->
+    <div id="authBlock">
+      <input id="emailInput" class="auth-input" type="email" placeholder="Email" autocomplete="email" />
+      <input id="passInput" class="auth-input" type="password" placeholder="Password" autocomplete="current-password" />
+      <input id="usernameInput" class="auth-input" type="text" placeholder="Username (required for Sign Up)" style="display:none;" />
+      <div class="auth-row">
+        <button id="btnEmailSignIn" class="btn">Sign In</button>
+        <button id="btnEmailSignUp" class="btn btn-ghost">Sign Up</button>
+      </div>
+      <div class="divider"><span>OR</span></div>
+      <button id="btnGoogle" class="google-btn" aria-label="Sign in with Google">
+        <img alt="" src="https://developers.google.com/identity/images/g-logo.png" />
+        <span>Sign in with Google</span>
+      </button>
+    </div>
 
-    <div class="auth‐divider">OR</div>
-
-    <!-- Google -->
-    <button id="btnGoogleSignIn">Continue with Google</button>
-    <button id="btnSignOut" style="display:none;">Sign Out</button>
-  </div>
-
-  <!-- Warning Banner -->
-  <div class="warning-banner">
-    <img src="https://app.masonnet.org/warning.svg" alt="Warning">
-    <div class="warning-text">
-      This is a test build under active development as of August 2nd, 2025.
-      Some features may only work partially, or not at all.
-      Do not enter any sensitive information or account credentials on this page.
+    <!-- Signed-in options -->
+    <div id="optionsBlock" style="display:none;">
+      <div class="options">
+        <button class="opt" id="optYourProfile">Your Profile</button>
+        <button class="opt" id="optSearchProfiles">Search Profiles</button>
+        <button class="opt" id="optAccountSettings">Account settings & Profile customization</button>
+        <button class="opt" id="optSendFeedback">Send feedback</button>
+        <button class="opt" id="optAddAccount">Add another account</button>
+        <button class="opt" id="optAdminConsole" style="display:none;">Admin console</button>
+        <button class="opt" id="optSignOut">Sign out</button>
+      </div>
     </div>
   </div>
 
-  <!-- Main Menu -->
-  <div class="menu-box" id="menuBox">
-    <img src="https://app.masonnet.org/fbrc.png" class="logo" alt="FlappyBird Logo">
-    <button class="menu-button" id="btnStart">Start</button>
-    <button class="menu-button" id="btnLeaderboard">Leaderboard</button>
-    <button class="menu-button" id="btnSettings">Settings</button>
-    <button class="menu-button" id="btnHub">Flappy Bird Hub</button>
+  <!-- Admin console prompt -->
+  <div id="adminModal" class="admin-modal" role="dialog" aria-modal="true">
+    <div class="backdrop"></div>
+    <div class="card">
+      <h3>Admin console access</h3>
+      <div class="admin-row">
+        <label for="adminPass" class="muted">Enter admin password</label>
+        <input id="adminPass" class="auth-input" type="password" placeholder="Admin password" />
+      </div>
+      <div class="btns">
+        <button id="btnAdminCancel" class="btn btn-ghost">Cancel</button>
+        <button id="btnAdminEnter" class="btn">Enter</button>
+      </div>
+    </div>
   </div>
 
-  <!-- Leaderboard Modal -->
+  <!-- Stack (warning + main menu) -->
+  <div class="stack">
+    <div class="warning-banner" id="warning">
+      <img src="https://app.masonnet.org/warning.svg" alt="Warning" />
+      <div class="warning-text">
+        This is a test build under active development as of August 2nd, 2025.
+        Some features may only work partially, or not at all.
+        Do not enter any sensitive information or account credentials on this page.
+      </div>
+    </div>
+
+    <div class="menu-box" id="menuBox">
+      <img src="https://app.masonnet.org/fbrc.png" alt="FlappyBird Logo" class="logo" />
+      <button class="menu-button" id="btnStart">Start</button>
+      <button class="menu-button" id="btnLeaderboardOpen">Leaderboard</button>
+      <button class="menu-button" id="btnSettingsOpen">Settings</button>
+      <button class="menu-button" id="btnHub">Flappy Bird Hub</button>
+    </div>
+  </div>
+
+  <!-- Leaderboard modal -->
   <div id="leaderboardModal" class="leaderboard-modal">
     <h2>🏆 Leaderboard</h2>
-    <div id="leaderboardEntries">Loading...</div>
-    <button class="close-button" id="btnCloseLB">Close</button>
+    <div id="leaderboardEntries"><div class="entry"><em>Loading…</em></div></div>
+    <button id="btnCloseLB" class="close-button">Close</button>
   </div>
 
-  <!-- Settings Modal -->
+  <!-- Settings modal -->
   <div id="settingsModal" class="modal">
-    <div class="modal-bg"></div>
+    <div class="backdrop"></div>
     <div class="sheet">
       <h2>⚙️ Settings</h2>
       <div class="row">
         <span>Sound</span>
-        <label class="toggle">
-          <input id="setSound" type="checkbox">
-          <span class="slider"></span>
-        </label>
+        <label class="toggle"><input type="checkbox" id="setSound"><span class="slider"></span></label>
       </div>
       <div class="row">
         <span>Skip to Game Over</span>
-        <label class="toggle">
-          <input id="setSkip" type="checkbox">
-          <span class="slider"></span>
-        </label>
+        <label class="toggle"><input type="checkbox" id="setSkip"><span class="slider"></span></label>
       </div>
       <div class="row">
         <label>Game Theme</label>
         <select id="setGameTheme">
           <option value="classic">Classic</option>
           <option value="neon">Neon</option>
+          <option value="night">Night</option>
+          <option value="day">Day</option>
         </select>
       </div>
-      <button id="btnSaveSettings" class="save-btn">Save Settings</button>
+      <button id="btnSaveSettings" class="save-btn">Save</button>
     </div>
   </div>
 
-  <!-- Game Stage -->
+  <!-- Game stage -->
   <div id="gameStage">
     <canvas id="gameCanvas"></canvas>
   </div>
 
   <script>
-    // Firebase init
-      const firebaseConfig = {
+    /* ========== Firebase Init (replace with your config) ========== */
+    const firebaseConfig = {
     apiKey: "AIzaSyDtfrpxKaROrq1D0NUAbFl0FZ9E7axOIxE",
     authDomain: "masonnet-app-official.firebaseapp.com",
     databaseURL: "https://masonnet-app-official-default-rtdb.firebaseio.com",
@@ -261,210 +323,385 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db   = firebase.firestore();
-    const provider = new firebase.auth.GoogleAuthProvider();
+    const googleProvider = new firebase.auth.GoogleAuthProvider();
 
-    // UI refs
-    const avatarBtn       = document.getElementById("avatarBtn");
-    const profilePanel    = document.getElementById("profilePanel");
-    const userPhoto       = document.getElementById("userPhoto");
-    const profileName     = document.getElementById("profileName");
-    const emailInput      = document.getElementById("emailInput");
-    const passInput       = document.getElementById("passInput");
-    const btnEmailSignIn  = document.getElementById("btnEmailSignIn");
-    const btnEmailSignUp  = document.getElementById("btnEmailSignUp");
-    const btnGoogleSignIn = document.getElementById("btnGoogleSignIn");
-    const btnSignOut      = document.getElementById("btnSignOut");
-    const btnDiagnostics  = document.getElementById("btnDiagnostics");
-    const menuBox         = document.getElementById("menuBox");
-    const btnStart        = document.getElementById("btnStart");
-    const btnLeaderboard  = document.getElementById("btnLeaderboard");
-    const btnSettings     = document.getElementById("btnSettings");
-    const btnHub          = document.getElementById("btnHub");
-    const lbModal         = document.getElementById("leaderboardModal");
-    const lbEntries       = document.getElementById("leaderboardEntries");
-    const btnCloseLB      = document.getElementById("btnCloseLB");
-    const settingsModal   = document.getElementById("settingsModal");
-    const modalBg         = settingsModal.querySelector(".modal-bg");
-    const btnSaveSettings = document.getElementById("btnSaveSettings");
-    const canvas          = document.getElementById("gameCanvas");
-    const ctx             = canvas.getContext("2d");
+    /* ========== DOM helpers ========== */
+    const $  = (s) => document.querySelector(s);
+    const on = (el, ev, fn) => el.addEventListener(ev, fn);
 
-    // Auth state listener
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        profileName.textContent = user.displayName || user.email;
-        userPhoto.src = user.photoURL || "";
-        userPhoto.style.display = user.photoURL ? "block" : "none";
-        btnEmailSignIn.style.display  = "none";
-        btnEmailSignUp.style.display  = "none";
-        emailInput.style.display      = "none";
-        passInput.style.display       = "none";
-        btnGoogleSignIn.style.display = "none";
-        btnSignOut.style.display      = "block";
-        btnDiagnostics.style.display  = user.email === "admin@masonnet.org" ? "inline-block" : "none";
-      } else {
-        profileName.textContent = "Not signed in";
-        userPhoto.style.display  = "none";
-        emailInput.style.display = "block";
-        passInput.style.display  = "block";
-        btnEmailSignIn.style.display  = "block";
-        btnEmailSignUp.style.display  = "block";
-        btnGoogleSignIn.style.display = "block";
-        btnSignOut.style.display      = "none";
-        btnDiagnostics.style.display  = "none";
-      }
-    });
+    /* ========== Elements ========== */
+    const btnDiagnostics = $('#btnDiagnostics');
+    const avatarBtn = $('#avatarBtn');
+    const profilePanel = $('#profilePanel');
+    const profileAva = $('#profileAva');
+    const profileName = $('#profileName');
+    const profileEmail = $('#profileEmail');
 
-    // Profile panel toggle
-    avatarBtn.addEventListener("click", e => {
+    const authBlock = $('#authBlock');
+    const optionsBlock = $('#optionsBlock');
+
+    const emailInput = $('#emailInput');
+    const passInput = $('#passInput');
+    const usernameInput = $('#usernameInput'); // required on sign-up
+    const btnEmailSignIn = $('#btnEmailSignIn');
+    const btnEmailSignUp = $('#btnEmailSignUp');
+    const btnGoogle = $('#btnGoogle');
+
+    const optYourProfile = $('#optYourProfile');
+    const optSearchProfiles = $('#optSearchProfiles');
+    const optAccountSettings = $('#optAccountSettings');
+    const optSendFeedback = $('#optSendFeedback');
+    const optAddAccount = $('#optAddAccount');
+    const optAdminConsole = $('#optAdminConsole');
+    const optSignOut = $('#optSignOut');
+
+    const adminModal = $('#adminModal');
+    const adminPass = $('#adminPass');
+    const btnAdminCancel = $('#btnAdminCancel');
+    const btnAdminEnter  = $('#btnAdminEnter');
+
+    const warningBanner = $('#warning');
+    const menuBox = $('#menuBox');
+
+    const lbModal = $('#leaderboardModal');
+    const lbEntries = $('#leaderboardEntries');
+    const btnCloseLB = $('#btnCloseLB');
+    const btnLeaderboardOpen = $('#btnLeaderboardOpen');
+
+    const settingsModal = $('#settingsModal');
+    const btnSettingsOpen = $('#btnSettingsOpen');
+    const btnSaveSettings = $('#btnSaveSettings');
+    const setSound = $('#setSound');
+    const setSkip  = $('#setSkip');
+    const setGameTheme = $('#setGameTheme');
+
+    const btnStart = $('#btnStart');
+    const btnHub   = $('#btnHub');
+
+    /* ========== Layout: center warning + menu ========== */
+    function centerStack() {
+      warningBanner.style.marginLeft = 'auto';
+      warningBanner.style.marginRight = 'auto';
+      menuBox.style.marginLeft = 'auto';
+      menuBox.style.marginRight = 'auto';
+    }
+    centerStack();
+    on(window, 'resize', centerStack);
+
+    /* ========== Profile panel toggle ========== */
+    on(avatarBtn, 'click', (e) => {
       e.stopPropagation();
-      profilePanel.style.display = profilePanel.style.display === "block" ? "none" : "block";
+      profilePanel.style.display = (profilePanel.style.display === 'block') ? 'none' : 'block';
     });
-    document.addEventListener("click", e => {
+    on(document, 'click', (e) => {
       if (!profilePanel.contains(e.target) && e.target !== avatarBtn) {
-        profilePanel.style.display = "none";
+        profilePanel.style.display = 'none';
       }
     });
 
-    // Email/Password handlers
-    btnEmailSignIn.onclick = () => {
-      const email = emailInput.value;
+    /* ========== Auth: Email/Password + Google ========== */
+    let signupPhase = 0;
+    on(btnEmailSignUp, 'click', async () => {
+      const email = emailInput.value.trim();
       const pass  = passInput.value;
-      auth.signInWithEmailAndPassword(email, pass).catch(err => alert(err.message));
-    };
-    btnEmailSignUp.onclick = () => {
-      const email = emailInput.value;
+      if (signupPhase === 0) {
+        // Reveal username field
+        usernameInput.style.display = 'block';
+        usernameInput.focus();
+        signupPhase = 1;
+        return;
+      }
+      const uname = usernameInput.value.trim();
+      if (!email || !pass || !uname) {
+        alert('Email, password, and username are required.');
+        return;
+      }
+      try {
+        const cred = await auth.createUserWithEmailAndPassword(email, pass);
+        // Set displayName
+        await cred.user.updateProfile({ displayName: uname });
+        // Save user profile doc
+        await db.collection('users').doc(cred.user.uid).set({
+          uid: cred.user.uid,
+          email: cred.user.email,
+          username: uname,
+          photoURL: cred.user.photoURL || '',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        usernameInput.style.display = 'none';
+        signupPhase = 0;
+      } catch (e) {
+        alert(e.message);
+      }
+    });
+
+    on(btnEmailSignIn, 'click', async () => {
+      const email = emailInput.value.trim();
       const pass  = passInput.value;
-      auth.createUserWithEmailAndPassword(email, pass).catch(err => alert(err.message));
-    };
+      if (!email || !pass) { alert('Enter email and password.'); return; }
+      try {
+        await auth.signInWithEmailAndPassword(email, pass);
+        usernameInput.style.display = 'none';
+        signupPhase = 0;
+      } catch (e) {
+        alert(e.message);
+      }
+    });
 
-    // Google handlers
-    btnGoogleSignIn.onclick = () => auth.signInWithPopup(provider).catch(err => alert(err.message));
-    btnSignOut.onclick      = () => auth.signOut();
+    on(btnGoogle, 'click', async () => {
+      try {
+        await auth.signInWithPopup(googleProvider);
+      } catch (e) {
+        alert(e.message);
+      }
+    });
 
-    // Diagnostics
-    btnDiagnostics.onclick = () => alert("Diagnostics: All systems nominal.");
+    on(optAddAccount, 'click', async () => {
+      // Try linking a Google account if signed in, otherwise prompt sign-in
+      const u = auth.currentUser;
+      if (u) {
+        try {
+          await u.linkWithPopup(googleProvider);
+          alert('Account linked with Google.');
+        } catch (e) {
+          // Fallback: sign in to switch accounts
+          try { await auth.signInWithPopup(googleProvider); } catch (err) { alert(err.message); }
+        }
+      } else {
+        try { await auth.signInWithPopup(googleProvider); } catch (err) { alert(err.message); }
+      }
+    });
 
-    // Leaderboard
-    btnLeaderboard.onclick = () => {
-      lbModal.style.display = "block";
-      lbEntries.innerHTML   = "<div class='entry'><em>Loading...</em></div>";
-      db.collection("leaderboard")
-        .orderBy("score","desc").limit(10).get()
+    on(optSignOut, 'click', async () => { await auth.signOut(); });
+
+    auth.onAuthStateChanged(user => {
+      const authed = !!user;
+      if (authed) {
+        const uname = user.displayName || (user.email ? user.email.split('@')[0] : 'Player');
+        profileName.textContent = uname;
+        profileEmail.textContent = user.email || '';
+        profileAva.style.backgroundImage = user.photoURL ? `url("${user.photoURL}")` : 'none';
+
+        authBlock.style.display = 'none';
+        optionsBlock.style.display = 'block';
+
+        // Admin gating
+        const isAdmin = user.email === 'admin@masonnet.org';
+        btnDiagnostics.style.display = isAdmin ? 'inline-block' : 'none';
+        optAdminConsole.style.display = isAdmin ? 'block' : 'none';
+      } else {
+        profileName.textContent = 'Not signed in';
+        profileEmail.textContent = '—';
+        profileAva.style.backgroundImage = 'none';
+
+        authBlock.style.display = 'block';
+        optionsBlock.style.display = 'none';
+        btnDiagnostics.style.display = 'none';
+        optAdminConsole.style.display = 'none';
+      }
+    });
+
+    /* ========== Admin console prompt (password required) ========== */
+    on(optAdminConsole, 'click', () => {
+      // Show prompt modal to enter admin password
+      adminPass.value = '';
+      adminModal.style.display = 'flex';
+      adminPass.focus();
+    });
+    on(btnAdminCancel, 'click', () => { adminModal.style.display = 'none'; });
+    on(adminModal, 'click', (e) => { if (e.target === adminModal) adminModal.style.display = 'none'; });
+    on(btnAdminEnter, 'click', () => {
+      const u = auth.currentUser;
+      if (!u || u.email !== 'admin@masonnet.org') {
+        alert('Unauthorized'); return;
+      }
+      if (adminPass.value !== 'admin123') {
+        alert('Incorrect admin password.'); return;
+      }
+      adminModal.style.display = 'none';
+      // Admin console placeholder
+      alert('Welcome to the Admin Console, ' + (u.displayName || 'Admin') + '.');
+    });
+
+    /* ========== Profile options placeholders ========== */
+    on(optYourProfile,      'click', () => alert('Your Profile placeholder'));
+    on(optSearchProfiles,   'click', () => alert('Search Profiles placeholder'));
+    on(optAccountSettings,  'click', () => alert('Account settings & Profile customization placeholder'));
+    on(optSendFeedback,     'click', () => alert('Send feedback placeholder'));
+
+    /* ========== Diagnostics (admin only) ========== */
+    on(btnDiagnostics, 'click', () => {
+      const u = auth.currentUser;
+      if (!u || u.email !== 'admin@masonnet.org') { alert('Unauthorized'); return; }
+      const dims = `${window.innerWidth}x${window.innerHeight}`;
+      alert(`Diagnostics\nUser: ${u.email}\nViewport: ${dims}\nOnline: ${navigator.onLine ? 'Yes' : 'No'}`);
+    });
+
+    /* ========== Leaderboard (Firestore) ========== */
+    on(btnLeaderboardOpen, 'click', () => {
+      lbModal.style.display = 'block';
+      lbEntries.innerHTML = "<div class='entry'><em>Loading…</em></div>";
+      db.collection('leaderboard').orderBy('score', 'desc').limit(10).get()
         .then(snap => {
-          lbEntries.innerHTML = "";
+          const rows = [];
           snap.forEach(doc => {
-            const { username, score } = doc.data();
-            const row = document.createElement("div");
-            row.className = "entry";
-            row.innerHTML = `<span>${username}</span><span>${score}</span>`;
-            lbEntries.appendChild(row);
+            const d = doc.data();
+            rows.push(`<div class="entry"><span>${(d.username || d.name || 'Player')}</span><span>${d.score || 0}</span></div>`);
           });
+          lbEntries.innerHTML = rows.length ? rows.join('') : "<div class='entry'><em>No scores yet</em></div>";
         })
         .catch(() => {
           lbEntries.innerHTML = "<div class='entry'><em>Error loading</em></div>";
         });
-    };
-    btnCloseLB.onclick = () => lbModal.style.display = "none";
+    });
+    on(btnCloseLB, 'click', () => lbModal.style.display = 'none');
 
-    // Settings modal
-    btnSettings.onclick     = () => settingsModal.style.display = "flex";
-    modalBg.onclick         = () => settingsModal.style.display = "none";
-    btnSaveSettings.onclick = () => settingsModal.style.display = "none";
+    /* ========== Settings modal ========== */
+    on(btnSettingsOpen, 'click', () => settingsModal.style.display = 'block');
+    on(settingsModal.querySelector('.backdrop'), 'click', () => settingsModal.style.display = 'none');
+    on(btnSaveSettings, 'click', () => {
+      localStorage.setItem('fb.sound', $('#setSound').checked ? '1' : '0');
+      localStorage.setItem('fb.skip',  $('#setSkip').checked ? '1' : '0');
+      localStorage.setItem('fb.theme', $('#setGameTheme').value);
+      settingsModal.style.display = 'none';
+    });
+    // Load persisted
+    $('#setSound').checked = localStorage.getItem('fb.sound') === '1';
+    $('#setSkip').checked  = localStorage.getItem('fb.skip') === '1';
+    $('#setGameTheme').value = localStorage.getItem('fb.theme') || 'classic';
 
-    // Hub link
-    btnHub.onclick = () => location.href = "https://app.masonnet.org/flappybirdhub";
+    /* ========== Hub link ========== */
+    on(btnHub, 'click', () => { window.location.href = 'https://app.masonnet.org/flappybirdhub'; });
 
-    // Game loop (same as baseline)
-    let birdImg, pipeStemImg, pipeTopImg, bird, pipes, frameCount, score, gameOver;
-    const jumpStrength = -8, gravity = 0.5;
+    /* ========== Game (uses images + wider gaps) ========== */
+    const stage  = $('#gameStage');
+    const canvas = $('#gameCanvas');
+    const ctx    = canvas.getContext('2d');
 
-    function initAssets() {
-      birdImg     = new Image(); birdImg.src     = "https://app.masonnet.org/flappybird_sprite.png";
-      pipeStemImg = new Image(); pipeStemImg.src = "https://app.masonnet.org/pipe_stem.png";
-      pipeTopImg  = new Image(); pipeTopImg.src  = "https://app.masonnet.org/pipe_top.png";
+    // Assets
+    const birdImg = new Image();
+    birdImg.src = 'https://app.masonnet.org/flappybird_sprite.png';
+
+    const pipeStemImg = new Image();
+    pipeStemImg.src = 'https://app.masonnet.org/pipe_stem.png';
+
+    const pipeTopImg = new Image();
+    pipeTopImg.src  = 'https://app.masonnet.org/pipe_top.png';
+
+    function resizeCanvas() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
     }
+    on(window, 'resize', resizeCanvas);
+
+    let raf, frames, birdY, birdV, pipes, score, over, lastSpawn;
+    const bx = 80;      // bird x
+    const r  = 18;      // bird radius for collision
+    const gravity = 0.42;
+    const flapV   = -8.2;
 
     function startGame() {
-      menuBox.style.display        = "none";
-      lbModal.style.display        = "none";
-      settingsModal.style.display  = "none";
-      canvas.width                 = window.innerWidth;
-      canvas.height                = window.innerHeight;
-      bird   = { x: 80, y: canvas.height/2, vy: 0, w: 34, h: 24 };
-      pipes  = []; frameCount = 0; score = 0; gameOver = false;
-      document.getElementById("gameStage").style.display = "block";
-      canvas.addEventListener("click", flap);
-      canvas.addEventListener("touchstart", flap);
-      if (!birdImg) initAssets();
-      requestAnimationFrame(gameLoop);
-    }
+      lbModal.style.display = 'none';
+      settingsModal.style.display = 'none';
+      menuBox.style.display = 'none';
+      stage.style.display = 'block';
 
-    function flap() {
-      bird.vy = jumpStrength;
-    }
-
-    function gameLoop() {
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      bird.vy += gravity; bird.y += bird.vy;
-      ctx.drawImage(birdImg, bird.x, bird.y, bird.w, bird.h);
-
-      if (frameCount % 90 === 0) {
-        const gap  = 120;
-        const topH = 50 + Math.random()*(canvas.height/2);
-        pipes.push({ x: canvas.width, yTop: topH, gap });
-      }
-
-      pipes.forEach((p,i) => {
-        p.x -= 2;
-        ctx.drawImage(pipeStemImg, p.x, 0, 52, p.yTop);
-        ctx.drawImage(pipeTopImg, p.x, p.yTop - 44, 52, 52);
-        const by = p.yTop + p.gap;
-        ctx.drawImage(pipeStemImg, p.x, by, 52, canvas.height - by);
-        ctx.drawImage(pipeTopImg, p.x, by, 52, 52);
-
-        if (
-          bird.x < p.x + 52 &&
-          bird.x + bird.w > p.x &&
-          (bird.y < p.yTop || bird.y + bird.h > by) ||
-          bird.y + bird.h > canvas.height ||
-          bird.y < 0
-        ) gameOver = true;
-
-        if (!p.passed && p.x + 52 < bird.x) {
-          score++; p.passed = true;
-        }
-        if (p.x + 52 < 0) pipes.splice(i,1);
-      });
-
-      ctx.fillStyle = "#fff";
-      ctx.font      = "24px Arial";
-      ctx.fillText(score, 16, 32);
-
-      frameCount++;
-      if (gameOver) return endGame();
-      requestAnimationFrame(gameLoop);
+      resizeCanvas();
+      frames = 0; score = 0; over = false; birdV = 0; lastSpawn = 0;
+      birdY = canvas.height / 2;
+      pipes = [];
+      raf = requestAnimationFrame(loop);
     }
 
     function endGame() {
-      canvas.removeEventListener("click", flap);
-      canvas.removeEventListener("touchstart", flap);
-      setTimeout(() => {
-        alert("Game Over! Your score: " + score);
-        document.getElementById("gameStage").style.display = "none";
-        menuBox.style.display = "block";
-      }, 200);
+      cancelAnimationFrame(raf);
+      stage.style.display = 'none';
+      menuBox.style.display = 'flex';
+
+      // Submit score
+      const u = auth.currentUser;
+      const uname = u ? (u.displayName || (u.email ? u.email.split('@')[0] : 'Player')) : 'Guest';
+      db.collection('leaderboard').add({
+        username: uname,
+        score,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch(()=>{});
     }
 
-    window.addEventListener("resize", () => {
-      if (document.getElementById("gameStage").style.display === "block") {
-        canvas.width  = window.innerWidth;
-        canvas.height = window.innerHeight;
+    function loop(ts=0) {
+      frames++;
+
+      // physics
+      birdV += gravity;
+      birdY += birdV;
+
+      // spawn pipes (wider gap)
+      if (!lastSpawn || ts - lastSpawn > 1500) {
+        const minTop = 40;
+        const gap = Math.max(180, Math.round(canvas.height * 0.26)); // wider opening
+        const maxTop = canvas.height - gap - 120;
+        const top = Math.max(minTop, Math.min(maxTop, minTop + Math.random() * (maxTop - minTop)));
+        pipes.push({ x: canvas.width + 80, top, gap, w: 64, passed: false });
+        lastSpawn = ts;
       }
+
+      // move & collisions
+      pipes.forEach(p => p.x -= 2.6);
+      if (pipes[0] && pipes[0].x < -120) pipes.shift();
+
+      for (const p of pipes) {
+        const hitX = p.x < bx + r && p.x + p.w > bx - r;
+        const hitY = birdY - r < p.top || birdY + r > p.top + p.gap;
+        if (hitX && hitY) over = true;
+        if (!p.passed && p.x + p.w < bx - r) { p.passed = true; if ($('#setSkip').checked !== true) score++; }
+      }
+      if (birdY < 0 || birdY > canvas.height) over = true;
+
+      // draw frame
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+
+      // draw pipes with images
+      for (const p of pipes) {
+        // Top stem
+        ctx.drawImage(pipeStemImg, p.x, 0, p.w, p.top);
+        // Top cap
+        const capH = 52;
+        ctx.drawImage(pipeTopImg, p.x, p.top - capH + 4, p.w, capH);
+
+        // Bottom stem
+        const by = p.top + p.gap;
+        ctx.drawImage(pipeStemImg, p.x, by, p.w, canvas.height - by);
+        // Bottom cap
+        ctx.drawImage(pipeTopImg, p.x, by, p.w, capH);
+      }
+
+      // bird sprite
+      const birdW = 34, birdH = 24;
+      ctx.drawImage(birdImg, bx - birdW/2, birdY - birdH/2, birdW, birdH);
+
+      // score
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 36px Arial';
+      ctx.fillText(score, canvas.width / 2 - 10, 60);
+
+      if (!over) raf = requestAnimationFrame(loop);
+      else {
+        ctx.fillStyle = 'rgba(0,0,0,0.65)';
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = '#ff6161';
+        ctx.font = 'bold 48px Arial';
+        ctx.fillText('Game Over', canvas.width/2 - 140, canvas.height/2);
+        setTimeout(endGame, 900);
+      }
+    }
+
+    on(canvas, 'pointerdown', () => { if (!over) birdV = flapV; });
+    on(window, 'keydown', (e) => {
+      if (e.code === 'Space' || e.code === 'ArrowUp') { if (!over) birdV = flapV; }
     });
 
-    // Wire up Start button
-    document.getElementById("btnStart").onclick = startGame;
+    on(btnStart, 'click', startGame);
+
   </script>
 </body>
 </html>
